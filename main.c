@@ -1,11 +1,36 @@
+#include <curses.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ncurses.h>
+#include <unistd.h>
+
+static unsigned int waittime;
 
 typedef struct{
 	int row;
 	int col;
 } Coordinate;
+
+
+void printSudukoField(char field[9][9], Coordinate cur)
+{
+	WINDOW *window = initscr();
+	curs_set(0);
+	for (char row = 0; row < 9; row++) 
+	{
+		for (char col = 0; col < 9; col++)
+		{
+			char val;
+			if (field[row][col] == 0)
+				mvwprintw(window, row, col, "%c", '.');
+			else
+				mvwprintw(window, row, col, "%d",field[row][col]);
+		}
+	}
+	wmove(window, 9, 0);
+	refresh();
+}
 
 int* getPossibleNumbers(char field[9][9], Coordinate cur)
 {
@@ -67,13 +92,19 @@ bool solve(char field[][9], Coordinate cur)
 	{
 		if (! *(pos + i)) continue;
 
+		// setze das aktuelle Feld auf die mögliche Nummer aus dem array 'pos'
 		int tmp = field[cur.row][cur.col];
 		field[cur.row][cur.col] = (*(pos + i)) * (i+1);
 		
+		// schreibe das aktuelle Suduko-Feld auf die Konsole
+		printSudukoField(field, cur);
+		usleep(waittime);
+
 	// wenn keine Zahl mehr "0" (sprich frei) ist, gebe `true` zurück
 		const Coordinate next = nextFreeCell(field, cur);
 		if (next.row == -1 && next.col == -1) return true;
 		if (solve(field, next)) return true;
+	// Kombination ging nicht auf - setze das Feld zurück auf dfen Ausgangswert
 		field[cur.row][cur.col] = tmp;
 	}
 	free(pos);
@@ -81,8 +112,17 @@ bool solve(char field[][9], Coordinate cur)
 	return false;
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
+	if (argc < 2)
+	{
+		waittime = 500;
+	}
+	else 
+	{
+		waittime = strtol(argv[1], NULL, 10);
+	}
+
 	// char field[][9] = {
 	// 	{2,1,3,0,5,7,9,0,0},
 	// 	{0,0,5,0,0,0,3,8,0},
@@ -108,16 +148,10 @@ int main(void)
 	
 	Coordinate start = nextFreeCell(field, (Coordinate){0,0});
 
-	printf("success? %B\n", solve(field, start ));
+	printf("success? %s\n", solve(field, start ) ? "True": "False");
 
-	for (char i = 0; i < 9; i++)
-	{
-		for (char j = 0; j < 9; j++)
-		{
-			printf("%i ", field[i][j]);
-		}
-		printf("\n");
-	}
+	getch();
+	endwin();
 
 	return 0;
 }
