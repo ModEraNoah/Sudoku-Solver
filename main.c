@@ -76,6 +76,7 @@ bool solve(char field[][9], Coordinate cur)
 		if (solve(field, next)) return true;
 		field[cur.row][cur.col] = tmp;
 	}
+	free(pos);
 	// wenn keine Zahl möglich ist, gebe `false zurück`
 	return false;
 }
